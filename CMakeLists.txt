@@ -85,7 +85,12 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
             )
 endif()
 
-#target_compile_definitions(quickjs PRIVATE CUSTOMV8NAMESPACE=v8_qjs)
+if (QJS_NS)
+    message("using v8_qjs namespace >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    target_compile_definitions(quickjs PRIVATE CUSTOMV8NAMESPACE=v8_qjs)
+else  ()
+    message("using v8 namespace >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+endif()
 
 target_include_directories(quickjs PUBLIC ${CMAKE_SOURCE_DIR})
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
