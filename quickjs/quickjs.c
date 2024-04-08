@@ -55544,3 +55544,390 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
     JS_AddIntrinsicAtomics(ctx);
 #endif
 }
+/*-------begin fuctions for v8 api---------*/
+
+JSValue JS_NewFloat64_(JSContext *ctx, double d)
+{
+    return JS_NewFloat64(ctx, d);
+}
+
+JSValue JS_NewStringLen_(JSContext *ctx, const char *str1, size_t len1)
+{
+    return JS_NewStringLen(ctx, str1, len1);
+}
+
+JSValue JS_NewInt32_(JSContext *ctx, int32_t val)
+{
+    return JS_NewInt32(ctx, val);
+}
+
+JSValue JS_NewUint32_(JSContext *ctx, uint32_t val)
+{
+    return JS_NewUint32(ctx, val);
+}
+
+JSValue JS_True() {
+    return JS_TRUE;
+}
+
+JSValue JS_False() {
+    return JS_FALSE;
+}
+
+JSValue JS_Null() {
+    return JS_NULL;
+}
+
+JSValue JS_Undefined() {
+    return JS_UNDEFINED;
+}
+
+JS_BOOL JS_IsArrayBuffer(JSValueConst obj)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
+    {
+        return FALSE;
+    }
+    p = JS_VALUE_GET_OBJ(obj);
+    
+    return p->class_id == JS_CLASS_ARRAY_BUFFER;
+}
+
+JS_BOOL JS_IsArrayBufferView(JSValueConst obj)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
+    {
+        return FALSE;
+    }
+    p = JS_VALUE_GET_OBJ(obj);
+    return JS_CLASS_DATAVIEW == p->class_id || (p->class_id >= JS_CLASS_UINT8C_ARRAY && p->class_id <= JS_CLASS_FLOAT64_ARRAY);
+}
+
+JSValue JS_GetArrayBufferView(JSContext *ctx, JSValueConst obj)
+{
+    JSObject *p;
+    JSTypedArray *ta;
+    
+    if (!JS_IsArrayBufferView(obj)) {
+        JS_ThrowTypeError(ctx, "not a ArrayBufferView");
+        return JS_UNDEFINED;
+    }
+    p = JS_VALUE_GET_OBJ(obj);
+    
+    p = get_typed_array(ctx, obj, JS_CLASS_DATAVIEW == p->class_id);
+    if (!p)
+        return JS_EXCEPTION;
+    if (typed_array_is_detached(ctx, p))
+        return JS_ThrowTypeErrorDetachedArrayBuffer(ctx);
+    ta = p->u.typed_array;
+    return JS_DupValue(ctx, JS_MKPTR(JS_TAG_OBJECT, ta->buffer));
+}
+
+JS_BOOL JS_GetArrayBufferViewInfo(JSContext *ctx, JSValueConst obj,
+                               size_t *pbyte_offset,
+                               size_t *pbyte_length,
+                               size_t *pbytes_per_element)
+{
+    JSObject *p;
+    JSTypedArray *ta;
+    
+    if (!JS_IsArrayBufferView(obj)) {
+        JS_ThrowTypeError(ctx, "not a ArrayBufferView");
+        return FALSE;
+    }
+    p = JS_VALUE_GET_OBJ(obj);
+    
+    p = get_typed_array(ctx, obj, JS_CLASS_DATAVIEW == p->class_id);
+    
+    if (!p)
+        return FALSE;
+    if (typed_array_is_detached(ctx, p))
+        return FALSE;
+    ta = p->u.typed_array;
+    if (pbyte_offset)
+        *pbyte_offset = ta->offset;
+    if (pbyte_length)
+        *pbyte_length = ta->length;
+    if (pbytes_per_element) {
+        *pbytes_per_element = 1 << typed_array_size_log2(p->class_id);
+    }
+    return TRUE;
+}
+
+JS_BOOL JS_IsDate(JSValueConst obj)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
+    {
+        return FALSE;
+    }
+    p = JS_VALUE_GET_OBJ(obj);
+    
+    return p->class_id == JS_CLASS_DATE;
+}
+
+double JS_GetDate(JSContext *ctx, JSValueConst obj)
+{
+    double v;
+    if (JS_ThisTimeValue(ctx, &v, obj))
+    {
+        v = JS_FLOAT64_NAN;
+    }
+    return v;
+}
+
+JSValue JS_NewDate(JSContext *ctx, double val)
+{
+    JSValue proto, obj;
+    JSContext *realm;
+    
+    proto = JS_DupValue(ctx, ctx->class_proto[JS_CLASS_DATE]);
+
+    obj = JS_NewObjectProtoClass(ctx, proto, JS_CLASS_DATE);
+    JS_FreeValue(ctx, proto);
+    JS_SetObjectData(ctx, obj, __JS_NewFloat64(ctx, val));
+    return obj;
+}
+
+JS_BOOL JS_IsRegExp(JSValueConst obj)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
+    {
+        return FALSE;
+    }
+    p = JS_VALUE_GET_OBJ(obj);
+    
+    return p->class_id == JS_CLASS_REGEXP;
+}
+
+JSValue JS_GetOwnPropertyNamesAsArray(JSContext *ctx, JSValueConst obj)
+{
+    return JS_GetOwnPropertyNames2(ctx, obj, JS_GPN_STRING_MASK, JS_ITERATOR_KIND_KEY);
+}
+
+JSValue JS_NewMap(JSContext *ctx)
+{
+    JSMapState *s;
+    JSValue obj;
+
+    obj = js_create_from_ctor(ctx, JS_UNDEFINED, JS_CLASS_MAP);
+    if (JS_IsException(obj))
+        return JS_EXCEPTION;
+    s = js_mallocz(ctx, sizeof(*s));
+    if (!s)
+        goto fail;
+    init_list_head(&s->records);
+    s->is_weak = FALSE;
+    JS_SetOpaque(obj, s);
+    s->hash_size = 1;
+    s->hash_table = js_malloc(ctx, sizeof(s->hash_table[0]) * s->hash_size);
+    if (!s->hash_table)
+        goto fail;
+    init_list_head(&s->hash_table[0]);
+    s->record_count_threshold = 4;
+
+    return obj;
+    fail:
+    JS_FreeValue(ctx, obj);
+    return JS_EXCEPTION;
+}
+
+JSValue JS_MapSet(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key, JSValueConst value)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_MAP);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    key = map_normalize_key(ctx, key);
+    if (s->is_weak && !JS_IsObject(key))
+        return JS_ThrowTypeErrorNotAnObject(ctx);
+
+    mr = map_find_record(ctx, s, key);
+    if (mr) {
+        JS_FreeValue(ctx, mr->value);
+    } else {
+        mr = map_add_record(ctx, s, key);
+        if (!mr)
+            return JS_EXCEPTION;
+    }
+    mr->value = JS_DupValue(ctx, value);
+    return JS_DupValue(ctx, this_val);
+}
+
+JSValue JS_MapGet(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_MAP);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    mr = map_find_record(ctx, s, key);
+    if (!mr)
+        return JS_UNDEFINED;
+    else
+        return JS_DupValue(ctx, mr->value);
+}
+
+void JS_MapClear(JSContext *ctx, JSValueConst this_val)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_MAP);
+    struct list_head *el, *el1;
+    JSMapRecord *mr;
+
+    if (!s)
+        return;
+    list_for_each_safe(el, el1, &s->records) {
+        mr = list_entry(el, JSMapRecord, link);
+        map_delete_record(ctx->rt, s, mr);
+    }
+}
+
+JSValue JS_MapDelete(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_MAP);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    mr = map_find_record(ctx, s, key);
+    if (!mr)
+        return JS_FALSE;
+    map_delete_record(ctx->rt, s, mr);
+    return JS_TRUE;
+}
+
+JSValue JS_NewSet(JSContext *ctx)
+{
+    JSMapState *s;
+    JSValue obj;
+
+    obj = js_create_from_ctor(ctx, JS_UNDEFINED, JS_CLASS_SET);
+    if (JS_IsException(obj))
+        return JS_EXCEPTION;
+    s = js_mallocz(ctx, sizeof(*s));
+    if (!s)
+        goto fail;
+    init_list_head(&s->records);
+    s->is_weak = FALSE;
+    JS_SetOpaque(obj, s);
+    s->hash_size = 1;
+    s->hash_table = js_malloc(ctx, sizeof(s->hash_table[0]) * s->hash_size);
+    if (!s->hash_table)
+        goto fail;
+    init_list_head(&s->hash_table[0]);
+    s->record_count_threshold = 4;
+
+    return obj;
+    fail:
+    JS_FreeValue(ctx, obj);
+    return JS_EXCEPTION;
+}
+
+JSValue JS_SetAdd(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_SET);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    key = map_normalize_key(ctx, key);
+    if (s->is_weak && !JS_IsObject(key))
+        return JS_ThrowTypeErrorNotAnObject(ctx);
+
+    mr = map_find_record(ctx, s, key);
+    if (mr) {
+        JS_FreeValue(ctx, mr->value);
+    } else {
+        mr = map_add_record(ctx, s, key);
+        if (!mr)
+            return JS_EXCEPTION;
+    }
+    mr->value = JS_TRUE;
+    return JS_DupValue(ctx, this_val);
+}
+
+JSValue JS_SetHas(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_SET);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    mr = map_find_record(ctx, s, key);
+    if (!mr)
+        return JS_TRUE;
+    else
+        return JS_FALSE;
+}
+
+void JS_SetClear(JSContext *ctx, JSValueConst this_val)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_SET);
+    struct list_head *el, *el1;
+    JSMapRecord *mr;
+
+    if (!s)
+        return;
+    list_for_each_safe(el, el1, &s->records) {
+        mr = list_entry(el, JSMapRecord, link);
+        map_delete_record(ctx->rt, s, mr);
+    }
+}
+
+JSValue JS_SetDelete(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_SET);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    mr = map_find_record(ctx, s, key);
+    if (!mr)
+        return JS_FALSE;
+    map_delete_record(ctx->rt, s, mr);
+    return JS_TRUE;
+}
+
+JSValue JS_DupModule(JSContext *ctx, JSModuleDef* v)
+{
+    return JS_DupValue(ctx, JS_MKPTR(JS_TAG_MODULE, v));
+}
+
+/*-------end fuctions for v8 api---------*/
+
+JSValue JS_GET_MODULE_NS(JSContext *ctx, JSModuleDef* v)
+{
+    return js_get_module_ns(ctx, v);
+}
+
+int JS_ReleaseLoadedModule(JSContext *ctx, const char* path)
+{
+    struct list_head *el;
+    JSModuleDef *m;
+    JSAtom name = __JS_NewAtomInit(JS_GetRuntime(ctx), path, strlen(path), JS_ATOM_TYPE_STRING);
+    
+    /* first look at the loaded modules */
+    list_for_each(el, &ctx->loaded_modules) 
+    {
+        m = list_entry(el, JSModuleDef, link);
+        if (m->module_name == name) 
+        {
+            el->prev->next = el->next;
+            js_free_module_def(ctx, m);
+            JS_FreeAtom(ctx, name);
+            return 1;
+        }
+    }
+    JS_FreeAtom(ctx, name);
+    return 0;
+}
