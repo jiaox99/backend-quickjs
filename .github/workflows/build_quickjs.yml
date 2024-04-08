@@ -23,7 +23,7 @@ jobs:
         cp -r $GITHUB_WORKSPACE/qjs ~/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: ~/qjs/**/*
 
   build_macos_dll:
@@ -39,7 +39,7 @@ jobs:
         cp -r $GITHUB_WORKSPACE/qjs ~/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: ~/qjs/**/*
 
   build_macos_arm64:
@@ -56,7 +56,7 @@ jobs:
         cp -r $GITHUB_WORKSPACE/qjs ~/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: ~/qjs/**/*
         
   build_ios:
@@ -72,7 +72,7 @@ jobs:
         cp -r $GITHUB_WORKSPACE/qjs ~/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: ~/qjs/**/*
 
   build_android:
@@ -94,7 +94,7 @@ jobs:
         cp -r $GITHUB_WORKSPACE/qjs ~/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: ~/qjs/**/*
         
   build_linux:
@@ -110,7 +110,7 @@ jobs:
         cp -r $GITHUB_WORKSPACE/qjs ~/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: ~/qjs/**/*
 
   build_window_dll:
@@ -145,7 +145,7 @@ jobs:
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: qjs/**/*
         
   build_window_dll_md:
@@ -182,7 +182,7 @@ jobs:
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64MD/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: qjs/**/*
         
   build_window_dll_md_dll:
@@ -220,7 +220,7 @@ jobs:
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64DLL/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: qjs/**/*
 
   build_window_dll32:
@@ -256,13 +256,23 @@ jobs:
         cp /mingw32/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win32/
     - uses: actions/upload-artifact@v4
       with:
-        name: qjs_v8_bin
+        name: qjs_v8_bin-{{name}}
         path: qjs/**/*
  
+  merge:
+    runs-on: ubuntu-latest
+    needs: [build_android,build_window_dll,build_window_dll32,build_window_dll_md,build_window_dll_md_dll,build_macos,build_macos_dll,build_macos_arm64,build_ios,build_linux]
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: qjs_v8_bin
+          pattern: qjs_v8_bin-*
+  
   publish:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.tag_date != '' }}
-    needs: [build_android,build_window_dll,build_window_dll32,build_window_dll_md,build_window_dll_md_dll,build_macos,build_macos_dll,build_macos_arm64,build_ios,build_linux]
+    needs: [merge]
     steps:
       - uses: actions/download-artifact@v1
         with:
