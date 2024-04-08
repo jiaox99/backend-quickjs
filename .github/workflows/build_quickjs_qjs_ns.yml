@@ -21,7 +21,7 @@ jobs:
         cp -r include $GITHUB_WORKSPACE/qjs/quickjs/Inc
         cp -r puer-build.json $GITHUB_WORKSPACE/qjs/quickjs/
         cp -r $GITHUB_WORKSPACE/qjs ~/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: ~/qjs/**/*
@@ -37,7 +37,7 @@ jobs:
         chmod +x make_osx_dylib.sh
         sh ./make_osx_dylib.sh 1
         cp -r $GITHUB_WORKSPACE/qjs ~/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: ~/qjs/**/*
@@ -54,7 +54,7 @@ jobs:
         sh ./make_osx_arm64.sh 1
         cp -r include $GITHUB_WORKSPACE/qjs/quickjs/Inc
         cp -r $GITHUB_WORKSPACE/qjs ~/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: ~/qjs/**/*
@@ -70,7 +70,7 @@ jobs:
         chmod +x make_ios.sh
         sh ./make_ios.sh 1
         cp -r $GITHUB_WORKSPACE/qjs ~/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: ~/qjs/**/*
@@ -92,7 +92,7 @@ jobs:
         chmod +x make_android.sh
         ANDROID_NDK=~/android-ndk-r21b ./make_android.sh 1
         cp -r $GITHUB_WORKSPACE/qjs ~/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: ~/qjs/**/*
@@ -108,7 +108,7 @@ jobs:
         chmod +x make_linux64.sh
         ./make_linux64.sh 1
         cp -r $GITHUB_WORKSPACE/qjs ~/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: ~/qjs/**/*
@@ -143,7 +143,7 @@ jobs:
         cp build/libquickjs.dll.a qjs/quickjs/Lib/Win64/
         cp /mingw64/bin/libgcc_s_seh-1.dll qjs/quickjs/Lib/Win64/
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: qjs/**/*
@@ -180,7 +180,7 @@ jobs:
         cp build/libquickjs.dll.a qjs/quickjs/Lib/Win64MD/
         cp /mingw64/bin/libgcc_s_seh-1.dll qjs/quickjs/Lib/Win64MD/
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64MD/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: qjs/**/*
@@ -218,7 +218,7 @@ jobs:
         cp build/libquickjs.dll.a qjs/quickjs/Lib/Win64DLL/
         cp /mingw64/bin/libgcc_s_seh-1.dll qjs/quickjs/Lib/Win64DLL/
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64DLL/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: qjs/**/*
@@ -254,7 +254,7 @@ jobs:
         cp build/libquickjs.dll.a qjs/quickjs/Lib/Win32/
         cp /mingw32/bin/libgcc_s_dw2-1.dll qjs/quickjs/Lib/Win32/
         cp /mingw32/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win32/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: qjs_v8_bin
         path: qjs/**/*
