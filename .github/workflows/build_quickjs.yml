@@ -104,6 +104,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Run build script
       run: |
+        echo "Job name is $GITHUB_JOB"
+        echo "How about ${{ github.jobs[github.job].name }}"
         cd $GITHUB_WORKSPACE
         chmod +x make_linux64.sh
         ./make_linux64.sh
