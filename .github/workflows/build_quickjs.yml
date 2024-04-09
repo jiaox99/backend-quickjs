@@ -154,7 +154,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Insatll MSVC
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
     - uses: msys2/setup-msys2@v2
       with:
         update: true
@@ -191,7 +191,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Insatll MSVC
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
     - uses: msys2/setup-msys2@v2
       with:
         update: true
